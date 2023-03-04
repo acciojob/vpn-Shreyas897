@@ -22,55 +22,57 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Override
     public User connect(int userId, String countryName) throws Exception{
-        User user=userRepository2.findById(userId).get();
-        if(user.getConnected()){
+        User user = userRepository2.findById(userId).get();
+        if(user.getMaskedIp()!=null){
             throw new Exception("Already connected");
         }
-        String country1=user.getOriginalCountry().getCountryName().toString();
-        if(country1.equals(countryName)){
+        else if(countryName.equalsIgnoreCase(user.getOriginalCountry().getCountryName().toString())){
             return user;
         }
-        List<ServiceProvider>serviceProviderList=user.getServiceProviderList();
-        if(serviceProviderList==null)
-            throw new Exception("Unable to connect");
-        ServiceProvider serviceProvider=null;
-        List<ServiceProvider>serviceProviders=new ArrayList<>();
-        for(ServiceProvider x: serviceProviderList){
-            List<Country>countryList=x.getCountryList();
-            for(Country c:countryList){
-                if(c.getCountryName().toString().equals(countryName)){
-                    serviceProviders.add(x);
-                }
-            }
-        }
-//        if(serviceProviders==null){
-//            throw new Exception("Unable to connect");
-//        }
-        for(ServiceProvider x:serviceProviders){
-            if(serviceProvider==null)
-                serviceProvider=x;
-            else {
-                if(x.getId()<serviceProvider.getId())
-                    serviceProvider=x;
-            }
-        }
-        String updatedCode="";
-        for(Country x:serviceProvider.getCountryList()){
-            if(x.getCountryName().toString().equals(countryName)){
-                updatedCode=x.getCode();
-                break;
+        else {
+            if (user.getServiceProviderList()==null){
+                throw new Exception("Unable to connect");
             }
 
+            List<ServiceProvider> serviceProviderList = user.getServiceProviderList();
+            int a = Integer.MAX_VALUE;
+            ServiceProvider serviceProvider = null;
+            Country country =null;
+
+            for(ServiceProvider serviceProvider1:serviceProviderList){
+
+                List<Country> countryList = serviceProvider1.getCountryList();
+
+                for (Country country1: countryList){
+
+                    if(countryName.equalsIgnoreCase(country1.getCountryName().toString()) && a > serviceProvider1.getId() ){
+                        a=serviceProvider1.getId();
+                        serviceProvider=serviceProvider1;
+                        country=country1;
+                    }
+                }
+            }
+            if (serviceProvider!=null){
+                Connection connection = new Connection();
+                connection.setUser(user);
+                connection.setServiceProvider(serviceProvider);
+
+                String cc = country.getCode();
+                int givenId = serviceProvider.getId();
+                String mask = cc+"."+givenId+"."+userId;
+
+                user.setMaskedIp(mask);
+                user.setConnected(true);
+                user.getConnectionList().add(connection);
+
+                serviceProvider.getConnectionList().add(connection);
+
+                userRepository2.save(user);
+                serviceProviderRepository2.save(serviceProvider);
+
+
+            }
         }
-        user.setMaskedIp(updatedCode+"."+serviceProvider.getId()+"."+userId);
-        Connection connection=new Connection();
-        connection.setServiceProvider(serviceProvider);
-        connection.setUser(user);
-        serviceProvider.getConnectionList().add(connection);
-        user.getConnectionList().add(connection);
-        user.setConnected(true);
-        connectionRepository2.save(connection);
-        userRepository2.save(user);
         return user;
 
     }
