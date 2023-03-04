@@ -43,9 +43,9 @@ public class ConnectionServiceImpl implements ConnectionService {
                 }
             }
         }
-        if(serviceProviders==null){
-            throw new Exception("Unable to connect");
-        }
+//        if(serviceProviders==null){
+//            throw new Exception("Unable to connect");
+//        }
         for(ServiceProvider x:serviceProviders){
             if(serviceProvider==null)
                 serviceProvider=x;
