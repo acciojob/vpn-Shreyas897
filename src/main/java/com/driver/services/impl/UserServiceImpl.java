@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
         Country country=new Country();
         country.setCountryName(CountryName.valueOf(countryName));
         country.setUser(user);
-        user.setCountry(country);
+        user.setOriginalCountry(country);
 
         user.setOriginalIp(country.getCode()+"."+user.getId());
         countryRepository3.save(country);
